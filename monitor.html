@@ -53,14 +53,18 @@
 
 <script>
 const MAX_POINTS = 300;
-const DATA_RE  = /RMS:([\d.]+)\s+BatasRMS:([\d.]+)\s+MDF:([\d.]+)\s+BatasMDF:([\d.]+)/;
-const BASE_RE  = /BASELINE\s+RMS:([\d.]+)\s+MDF:([\d.]+)/;
-const MODE_RE  = /\[(\w+)\s+(\w+)\]/;
+
+// Baris data dari firmware:
+// [MONITOR Normal] RMS:x BatasRMS:y MDF:z BatasMDF:w BaseRMS:a BaseMDF:b
+const DATA_RE   = /RMS:([\d.]+)\s+BatasRMS:([\d.]+)\s+MDF:([\d.]+)\s+BatasMDF:([\d.]+)/;
+const BASE_IN_DATA_RE = /BaseRMS:([\d.]+)\s+BaseMDF:([\d.]+)/;
+const MODE_RE   = /^\[(\w+)\s+([\w]+)\]/;
+// Baris hasil kalibrasi: [HASIL] Baseline RMS = x , MDF = y
+const HASIL_BASE_RE = /Baseline RMS = ([\d.]+)\s*,\s*MDF = ([\d.]+)/;
 
 let port = null, reader = null, keepReading = false;
 let n = 0;
 let rows = [];
-let baseRms = null, baseMdf = null;
 
 const $ = id => document.getElementById(id);
 const btnConnect = $('btnConnect'), btnDisconnect = $('btnDisconnect');
@@ -84,7 +88,7 @@ function makeChart(canvasId, title, color, batasColor) {
   });
 }
 
-const rmsChart = makeChart('rmsChart', 'RMS (V-ADC)', '#2563eb', '#dc2626');
+const rmsChart = makeChart('rmsChart', 'RMS (count ADC)', '#2563eb', '#dc2626');
 const mdfChart = makeChart('mdfChart', 'MDF (Hz)', '#059669', '#dc2626');
 
 function setStatus(text) { $('status').textContent = text; }
@@ -116,28 +120,34 @@ function addPoint(rms, bRms, mdf, bMdf) {
   rows.push({ t: new Date().toISOString(), rms, bRms, mdf, bMdf });
 }
 
+function setBaseline(rms, mdf) {
+  if (rms > 0) $('cBRms').textContent = rms.toFixed(3);
+  if (mdf > 0) $('cBMdf').textContent = mdf.toFixed(1);
+}
+
 function handleLine(line) {
   log(line);
-
-  const base = line.match(BASE_RE);
-  if (base) {
-    baseRms = parseFloat(base[1]);
-    baseMdf = parseFloat(base[2]);
-    $('cBRms').textContent = baseRms.toFixed(3);
-    $('cBMdf').textContent = baseMdf.toFixed(1);
-    return;
-  }
 
   const d = line.match(DATA_RE);
   if (d) {
     addPoint(parseFloat(d[1]), parseFloat(d[2]), parseFloat(d[3]), parseFloat(d[4]));
+
+    const b = line.match(BASE_IN_DATA_RE);
+    if (b) setBaseline(parseFloat(b[1]), parseFloat(b[2]));
+
     const m = line.match(MODE_RE);
     if (m) $('cMode').textContent = m[1] + ' / ' + m[2];
     return;
   }
 
-  if (line.startsWith('STATUS:')) {
-    $('cMode').textContent = line.replace('STATUS:', '').trim().slice(0, 40);
+  const h = line.match(HASIL_BASE_RE);
+  if (h) {
+    setBaseline(parseFloat(h[1]), parseFloat(h[2]));
+    return;
+  }
+
+  if (line.startsWith('[EVENT]')) {
+    $('cMode').textContent = line.replace('[EVENT]', '').trim().slice(0, 40);
   }
 }
 

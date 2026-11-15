@@ -1,6 +1,6 @@
 # Monitor Kelelahan Otot Trapezius
 
-Aplikasi monitor berbasis browser untuk memantau sinyal EMG secara real-time dari ESP32 melalui kabel USB. Menampilkan grafik RMS dan MDF beserta garis batas, kartu statistik, dan log serial, serta dapat menyimpan data ke CSV.
+Aplikasi monitor berbasis browser untuk memantau sinyal EMG real-time dari ESP32 melalui kabel USB. Menampilkan grafik RMS dan MDF beserta garis batas, kartu baseline dan status, serta log serial, dan dapat menyimpan data ke CSV.
 
 ## Cara Menjalankan
 
@@ -15,21 +15,21 @@ Buka `http://localhost:8000/monitor/monitor.html`, lalu klik **Hubungkan ESP32**
 
 Tutup Serial Monitor Arduino IDE sebelum menghubungkan, karena port hanya bisa dipakai satu aplikasi. Baud rate: 115200.
 
+## Format Data
+
+Firmware mengirim satu baris per jendela sampel:
+
+```
+[MONITOR Normal] RMS:19.050 BatasRMS:26.430 MDF:187.50 BatasMDF:221.65 BaseRMS:17.620 BaseMDF:260.80
+[HASIL] Baseline RMS = 17.620 , MDF = 260.80
+[EVENT] Terapi mulai - kelelahan terdeteksi
+```
+
+Setiap baris data membawa baseline, sehingga kartu baseline terisi walaupun monitor tersambung setelah kalibrasi selesai.
+
 ## Fitur
 
 - Grafik RMS dan MDF real-time dengan garis batas.
-- Kartu statistik: RMS, MDF, baseline RMS, baseline MDF, dan mode/status.
+- Kartu: RMS, MDF, baseline RMS, baseline MDF, dan mode/status.
 - **Simpan CSV**: mengunduh seluruh data sesi (waktu, RMS, batas RMS, MDF, batas MDF).
 - **Bersihkan Grafik**: mengosongkan tampilan dan data sesi.
-
-## Format Data yang Dibaca
-
-Monitor membaca baris berikut dari ESP32:
-
-```
-[MONITOR NORMAL] RMS:0.812 BatasRMS:1.250 MDF:94.30 BatasMDF:80.10
-BASELINE RMS:0.833 MDF:94.10
-STATUS: TERAPI dimulai (manual)
-```
-
-Baris lain tetap ditampilkan di log tanpa diproses.
