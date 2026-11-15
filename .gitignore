@@ -1,0 +1,6 @@
+Arduino/
+*.o
+*.elf
+*.bin
+.DS_Store
+__pycache__/
